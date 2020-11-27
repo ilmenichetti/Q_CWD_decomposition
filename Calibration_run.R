@@ -26,23 +26,21 @@ library(hrbrthemes)
 
 #q0 prior list
 #from Joffre G.I. Agren, D. Gillon, and E. Bosatta, R, Richard Joffre, Gi Ågren, Dominique Gillon, and Ernesto Bosatta. 2001. “Organic Matter Quality in Ecological Studies: Theory Meets Experiment.” Oikos 93: 451–58. https://doi.org/10.1034/j.1600-0706.2001.930310.x.
-joffreQ<-c(0.931,
-1.000, 0.965,
-1.079,
-0.941, 1.009,
-1.062, 1.018, 1.067,
-1.045, 1.115,
-0.976, 1.035,
-0.965, 0.966, 0.968, 0.969,
-0.998, 1.000, 1.035, 1.045, 1.085, 1.148, 1.150, 1.178, 1.178, 1.185, 1.191, 1.195, 1.216, 1.222, 1.229, 1.268, 1.356, 1.368, 1.388, 1.465,
-0.998, 1.025, 1.048,
-1.091, 1.119, 1.147,
-1.108, 1.168,
-0.97)
+joffreQ<- c(0.931,
+            1.000, 0.965,
+            1.079,
+            0.941, 1.009,
+            1.062, 1.018, 1.067,
+            1.045, 1.115,
+            0.976, 1.035,
+            0.965, 0.966, 0.968, 0.969,
+            0.998, 1.000, 1.035, 1.045, 1.085, 1.148, 1.150, 1.178, 1.178, 1.185, 1.191, 1.195, 1.216, 1.222, 1.229, 1.268, 1.356, 1.368, 1.388, 1.465,
+            0.998, 1.025, 1.048,
+            1.091, 1.119, 1.147,
+            1.108, 1.168,
+            0.97)
 
-mean(joffreQ)
-sd(joffreQ)
-
+## a few control options for running the models
 rstan_options(mc.cores = parallel::detectCores()) # in case you want to run multicore
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
@@ -166,20 +164,21 @@ is.na(calib_data)
 
 
 
+
+
 ##################################################################################
 #######################  GENERAL CALIBRATION  ####################################
 ##################################################################################
 
-#Sys.setenv(STAN_NUM_THREADS=4)
-iterations=5000
-fit <- stan(file = 'dec_model_Q_general.stan', data = calib_data,  chains = 4, iter = iterations, thin=10,  cores=8, control = list(adapt_delta = 0.9))#, algorithm="HMC")
+#setting the number of iterations
+iterations=10000
+
+#running the Stan model and creating the calibration objects
+fit <- stan(file = 'dec_model_Q_general.stan', data = calib_data,  chains = 4, iter = iterations, thin=10,  cores=8, control = list(adapt_delta = 0.9))
 print(fit)
 str(fit)
-
 posteriors<-as.data.frame(fit)
 names<-colnames(posteriors)
-
-dim(posteriors)
 
 
 ## plot parameters posteriors and priors
@@ -705,7 +704,6 @@ for(j in 1:length(class.levels.text)){
 colMeans(RMSE.table.subclass, na.rm=T)
 
 
-
 colnames(HSY_table_remapped)<-class.levels.text
 
 
@@ -848,8 +846,7 @@ classes_palette<-c(brewer.pal(5, "Greens")[2:5],
                    brewer.pal(5, "Reds")[2:5],
                    rep("darkorange",4))
 
-  ######local fit
-
+######local fit
 calib_data_local<-list(N=dim(calibration_data_filtered)[1]+dim(Tarasov_data)[1],
                  time_gone=c(2003-calibration_data_filtered$Year.died, Tarasov_data$t),
                  mass_left=c(calibration_data_filtered$cmass.omass, Tarasov_data$y),
@@ -861,9 +858,7 @@ calib_data_local<-list(N=dim(calibration_data_filtered)[1]+dim(Tarasov_data)[1],
                  tree_class=as.numeric(tree.class),
                  delay_class=as.numeric(decay.class==2 | decay.class==1))
 
-iterations=10000
-#https://www.r-bloggers.com/rstanmulticore-a-cross-platform-r-package-to-automatically-run-rstan-mcmc-chains-in-parallel/
-
+#running the Stan model and creating the calibration objects
 start.time <- Sys.time()
 fit_local <- stan(file = 'dec_model_Q_specific.stan', data = calib_data_local,  chains = 4, iter = iterations, cores=4,  control = list(adapt_delta = 0.9), thin=2)
 end.time <- Sys.time()
@@ -911,7 +906,6 @@ parameters_list_local<-c(expression(beta),
 #diagnostics
 print(fit_local)
 
-##https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html
 available_mcmc(pattern = "_nuts_")
 
 lp_cp <- log_posterior(fit_local)
@@ -1340,8 +1334,6 @@ dev.off()
 
 
 
-
-
 colnames(posteriors_local_table)<-c("Mean", "Min", "Max")
 
 
@@ -1515,7 +1507,13 @@ ridgeplotting_table$classes<-factor(ridgeplotting_table$classes,levels(ridgeplot
 
 
 
-
+  
+  
+  
+    
+##################################################################################
+##################  CALIBRATION BY CLASSES - SIMULATION ##########################
+##################################################################################
 
 # thinning the posteriors to plot the simulations
 thinning=50
